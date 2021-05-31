@@ -51,7 +51,7 @@ public class Crawler {
 
     private void pagesize() {
         var maxSelector = By.id("max");
-        new WebDriverWait(driver, 3).until(presenceOfElementLocated(maxSelector));
+        new WebDriverWait(driver, 10).until(presenceOfElementLocated(maxSelector));
         var max = new Select(driver.findElement(maxSelector));
         max.selectByValue(Integer.toString(PAGE_SIZE));
         new WebDriverWait(driver, 10).until(ExpectedConditions.numberOfElementsToBe(By.xpath("//tbody/tr"), PAGE_SIZE));
@@ -86,9 +86,9 @@ public class Crawler {
         if (nextLink == null) {
             return false;
         }
+        var nextUrl = nextLink.getAttribute("href");
         nextLink.click();
-        var currentUrl = driver.getCurrentUrl();
-        new WebDriverWait(driver, 20).until(not(urlToBe(currentUrl)));
+        new WebDriverWait(driver, 30).until(urlToBe(nextUrl));
         return true;
     }
 
