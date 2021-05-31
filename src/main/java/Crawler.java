@@ -5,11 +5,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated;
+import static org.openqa.selenium.support.ui.ExpectedConditions.*;
 
 public class Crawler {
 
@@ -30,16 +31,6 @@ public class Crawler {
         System.out.println(result);
     }
 
-    private void pagesize() {
-        var maxSelector = By.id("max");
-        WebDriverWait waitBefore = new WebDriverWait(driver, 3);
-        waitBefore.until(presenceOfElementLocated(maxSelector));
-        var max = new Select(driver.findElement(maxSelector));
-        max.selectByValue(Integer.toString(PAGE_SIZE));
-        var waitAfter = new WebDriverWait(driver, 10);
-        waitAfter.until(ExpectedConditions.numberOfElementsToBe(By.xpath("//tbody/tr"), PAGE_SIZE));
-    }
-
     private void selectCountry() {
         var countriesValue = "CountryAUT";
         var input = driver.findElement(By.xpath("//input[@id=\"countries\"][@value=\"" + countriesValue + "\"]"));
@@ -58,17 +49,47 @@ public class Crawler {
         publicSearchForm.submit();
     }
 
+    private void pagesize() {
+        var maxSelector = By.id("max");
+        new WebDriverWait(driver, 3).until(presenceOfElementLocated(maxSelector));
+        var max = new Select(driver.findElement(maxSelector));
+        max.selectByValue(Integer.toString(PAGE_SIZE));
+        new WebDriverWait(driver, 10).until(ExpectedConditions.numberOfElementsToBe(By.xpath("//tbody/tr"), PAGE_SIZE));
+    }
+
     private List<List<String>> readTable() {
-        var table = driver.findElement(By.id("resultsTable"));
-        var thead = table.findElement(By.tagName("thead"));
-        var headings = thead.findElements(By.tagName("th")).stream().map(WebElement::getText).collect(Collectors.toList());
+        var result = new ArrayList<List<String>>();
+        result.add(getHeadings());
+        do {
+            result.addAll(getPageResult());
+        } while (nextPage());
+        return result;
+    }
+
+    private List<List<String>> getPageResult() {
+        var tableSelector = By.id("resultsTable");
+        new WebDriverWait(driver, 5).until(presenceOfElementLocated(tableSelector));
+        var table = driver.findElement(tableSelector);
         var tbody = table.findElement(By.tagName("tbody"));
         var rows = tbody.findElements(By.tagName("tr"));
         Function<WebElement, List<String>> rowText = row -> row.findElements(By.tagName("td")).stream().map(WebElement::getText).collect(Collectors.toList());
-        var result = rows.stream().map(rowText).collect(Collectors.toList());
-        result.add(0, headings);
-        return result;
+        return rows.stream().map(rowText).collect(Collectors.toList());
+    }
 
+    private List<String> getHeadings() {
+        var thead = driver.findElement(By.id("resultsTable")).findElement(By.tagName("thead"));
+        return thead.findElements(By.tagName("th")).stream().map(WebElement::getText).collect(Collectors.toList());
+    }
+
+    private boolean nextPage() {
+        var nextLink = driver.findElement(By.className("nextLink"));
+        if (nextLink == null) {
+            return false;
+        }
+        nextLink.click();
+        var currentUrl = driver.getCurrentUrl();
+        new WebDriverWait(driver, 20).until(not(urlToBe(currentUrl)));
+        return true;
     }
 
     public void close() {
