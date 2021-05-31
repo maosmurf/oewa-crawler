@@ -1,4 +1,5 @@
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -82,7 +83,12 @@ public class Crawler {
     }
 
     private boolean nextPage() {
-        var nextLink = driver.findElement(By.className("nextLink"));
+        WebElement nextLink;
+        try {
+            nextLink = driver.findElement(By.className("nextLink"));
+        } catch (NoSuchElementException e) {
+            return false;
+        }
         if (nextLink == null) {
             return false;
         }
